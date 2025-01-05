@@ -36,14 +36,14 @@ Based on the need for large-scale file processing, Apache Spark is an excellent 
                            |
           +------------------------------------+
           |                                    |
-  +------------------+               +------------------+
-  |    Worker Node   |               |    Worker Node   |
-  +------------------+               +------------------+
-          |                                    |
-   +--------------+                     +--------------+
-   | Task 1       |                     | Task 2       |
-   | File Part A  |                     | File Part B  |
-   +--------------+                     +--------------+
+      +------------------+               +------------------+
+      |    Worker Node   |               |    Worker Node   |
+      +------------------+               +------------------+
+              |                                    |
+       +--------------+                     +--------------+
+       | Task 1       |                     | Task 2       |
+       | File Part A  |                     | File Part B  |
+       +--------------+                     +--------------+
   
 
 ## File Processing Workflow
