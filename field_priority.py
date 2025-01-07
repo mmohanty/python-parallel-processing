@@ -1,89 +1,98 @@
 import pandas as pd
 import json
+import os
 
 # Load the Excel file
 file_path = "test_file.xlsx"
 xls = pd.ExcelFile(file_path)
 
 # Read sheets
-file_mapping_df = pd.read_excel(xls, sheet_name='FileMapping')  # Sheet containing filename and fileId
-lob_df = pd.read_excel(xls, sheet_name='L_Data')  # Sheet containing LOB1, LOB2, LOB3
-priority_df = pd.read_excel(xls, sheet_name='PriorityData')  # Sheet containing element priority
+lob_df = pd.read_excel(xls, sheet_name='L_Data')  # Contains fileId, LOB1, LOB2, LOB3
+priority_df = pd.read_excel(xls, sheet_name='PriorityData')  # Contains LOB1, LOB2, LOB3, element, documentType, priority
 
 
-# Function to get matched elements based on priority
-def get_matched_elements_by_priority(data, file_mapping_df, lob_df, priority_df):
-    matched_elements = []  # Store matched elements
+# Function to get highest-priority elements across multiple documents
+def get_highest_priority_elements(data_list, lob_df, priority_df):
+    element_priority_map = {}  # Store the highest-priority element for each `element_name`
 
-    # Group JSON data by (file_name, element_name)
-    grouped_data = {}
-    for record in data:
-        key = (record['file_name'], record['element_name'])
-        if key not in grouped_data:
-            grouped_data[key] = []
-        grouped_data[key].append(record)
-
-    for (file_name, element_name), records in grouped_data.items():
-        # Get fileId based on file_name from FileMapping sheet
-        file_id = file_mapping_df.loc[file_mapping_df['filename'] == file_name, 'fileId']
-        if file_id.empty:
-            print(f"No fileId found for file '{file_name}'")
-            continue
-        file_id = file_id.values[0]
+    for data in data_list:
+        # Extract fileId, document_type, and elements
+        file_id = data["fileId"]
+        document_type = data["document_type"]
+        elements = data["data"]
 
         # Get LOB1, LOB2, LOB3 based on fileId from LOBData sheet
-        lob_info = lob_df[lob_df['fileId'] == file_id][['LOB1', 'LOB2', 'LOB3']]
+        lob_info = lob_df[lob_df['fileId'] == int(file_id)][['LOB1', 'LOB2', 'LOB3']]
         if lob_info.empty:
             print(f"No LOB data found for fileId '{file_id}'")
             continue
 
         lob1, lob2, lob3 = lob_info.iloc[0].values
 
-        # Filter priority data based on LOB1, LOB2, LOB3
-        priority_filtered = priority_df[
-            (priority_df['LOB1'] == lob1) &
-            (priority_df['LOB2'] == lob2) &
-            (priority_df['LOB3'] == lob3)
-        ]
+        for record in elements:
+            element_name = record["element_name"]
 
-        # Create a priority map for document types
-        priority_list = priority_filtered[['documentType', 'priority']].to_dict(orient='records')
+            # Filter priority data based on LOB1, LOB2, LOB3, element, and documentType
+            priority_filtered = priority_df[
+                (priority_df['LOB1'] == lob1) &
+                (priority_df['LOB2'] == lob2) &
+                (priority_df['LOB3'] == lob3) &
+                (priority_df['element'] == element_name) &
+                (priority_df['documentType'] == document_type)
+            ]
 
-        # Sort records by priority based on document type
-        records_sorted_by_priority = sorted(
-            records,
-            key=lambda x: next(
-                (p['priority'] for p in priority_list if p['documentType'] == x['document_type']),
-                float('inf')  # If document_type not found, move to the end
-            )
-        )
+            if priority_filtered.empty:
+                print(f"No priority data found for element '{element_name}' with documentType '{document_type}' for lob '{lob1}' ")
+                continue
 
-        # If priority list is not empty, get the highest-priority record
-        if records_sorted_by_priority:
-            highest_priority_record = records_sorted_by_priority[0]
-            matched_elements.append(highest_priority_record)
-            print(f"Matched Element: File: '{file_name}', Element: '{element_name}' → Normal Value: {highest_priority_record['normal_value']}")
+            # Get priority rank
+            priority_rank = priority_filtered.iloc[0]["priority"]
 
-    return matched_elements
+            # Update the element if it has a higher priority (lower number)
+            if element_name not in element_priority_map or element_priority_map[element_name]["priority_rank"] > priority_rank:
+                element_priority_map[element_name] = {
+                    "fileId": file_id,
+                    "file_name": data["file_name"],
+                    "document_type": document_type,
+                    "element_name": element_name,
+                    "element_value": record["element_value"],
+                    "normal_value": record["normal_value"],
+                    "priority_rank": priority_rank
+                }
+
+    return list(element_priority_map.values())
 
 
 # Example usage
 
-# Sample JSON input
-json_input = '''
-[
-    {"element_name": "Element1", "element_value": "abc", "file_name": "file1.xlsx", "document_type": "Type1", "normal_value": "abc"},
-    {"element_name": "Element1", "element_value": "abcd", "file_name": "file1.xlsx", "document_type": "Type2", "normal_value": "abcd"},
-    {"element_name": "Element2", "element_value": "xyz", "file_name": "file1.xlsx", "document_type": "Type1", "normal_value": "xyz_value"},
-    {"element_name": "Element2", "element_value": "xyz_alt", "file_name": "file2.xlsx", "document_type": "Type3", "normal_value": "alt_value"},
-    {"element_name": "Element1", "element_value": "pqr", "file_name": "file2.xlsx", "document_type": "Type3", "normal_value": "pqr_value"}
-]
-'''
-# Convert JSON string to Python list of dictionaries
-data = json.loads(json_input)
-# Run the function
-matched_elements = get_matched_elements_by_priority(data, file_mapping_df, lob_df, priority_df)
+# Sample JSON input list
+json1 = '''{
+ "fileId": "101",
+ "file_name": "file1.xlsx",
+ "document_type": "Type1",
+ "data": [
+    {"element_name": "Element1", "element_value": "abc", "normal_value": "abc"},
+    {"element_name": "Element2", "element_value": "xyz", "normal_value": "xyz_value"}
+ ]
+}'''
 
-# Print the final list of matched elements
-print("\nMatched Elements List:")
-print(json.dumps(matched_elements, indent=4))
+json2 = '''{
+ "fileId": "102",
+ "file_name": "file2.xlsx",
+ "document_type": "Type2",
+ "data": [
+    {"element_name": "Element1", "element_value": "abcd", "normal_value": "abcd"},
+    {"element_name": "Element2", "element_value": "xyz_alt", "normal_value": "alt_value"}
+ ]
+}'''
+
+
+# Combine the JSON strings into a list of dictionaries
+data = [json.loads(json1), json.loads(json2)]
+
+# Run the function
+highest_priority_elements = get_highest_priority_elements(data, lob_df, priority_df)
+
+# Print the final list of highest-priority elements
+print("\nHighest Priority Elements List:")
+print(json.dumps(highest_priority_elements, indent=4, default=str))
