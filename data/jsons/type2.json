@@ -1,0 +1,9 @@
+{
+ "fileId": "102",
+ "file_name": "file2.xlsx",
+ "document_type": "Type2",
+ "data": [
+    {"element_name": "Element1", "element_value": "abcd", "normal_value": "abcd"},
+    {"element_name": "Element2", "element_value": "xyz_alt", "normal_value": "alt_value"}
+ ]
+}

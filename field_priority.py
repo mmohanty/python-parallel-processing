@@ -10,6 +10,17 @@ xls = pd.ExcelFile(file_path)
 lob_df = pd.read_excel(xls, sheet_name='L_Data')  # Contains fileId, LOB1, LOB2, LOB3
 priority_df = pd.read_excel(xls, sheet_name='PriorityData')  # Contains LOB1, LOB2, LOB3, element, documentType, priority
 
+# Function to read JSON files from a directory
+def read_json_files_from_directory(directory_path):
+    data_list = []  # Store JSON data from all files
+    for filename in os.listdir(directory_path):
+        if filename.endswith(".json"):  # Only read .json files
+            file_path = os.path.join(directory_path, filename)
+            with open(file_path, "r") as file:
+                data = json.load(file)  # Load JSON content
+                data_list.append(data)
+                print(f"Loaded JSON file: {filename}")
+    return data_list
 
 # Function to get highest-priority elements across multiple documents
 def get_highest_priority_elements(data_list, lob_df, priority_df):
@@ -86,12 +97,17 @@ json2 = '''{
  ]
 }'''
 
+# Directory path where the JSON files are stored
+directory_path = "data/jsons"
+
+# Read JSON files from the directory
+json_data_list = read_json_files_from_directory(directory_path)
 
 # Combine the JSON strings into a list of dictionaries
-data = [json.loads(json1), json.loads(json2)]
+# data = [json.loads(json1), json.loads(json2)]
 
 # Run the function
-highest_priority_elements = get_highest_priority_elements(data, lob_df, priority_df)
+highest_priority_elements = get_highest_priority_elements(json_data_list, lob_df, priority_df)
 
 # Print the final list of highest-priority elements
 print("\nHighest Priority Elements List:")
