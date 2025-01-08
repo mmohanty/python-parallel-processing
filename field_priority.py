@@ -9,6 +9,8 @@ xls = pd.ExcelFile(file_path)
 # Read sheets
 lob_df = pd.read_excel(xls, sheet_name='L_Data')  # Contains fileId, LOB1, LOB2, LOB3
 priority_df = pd.read_excel(xls, sheet_name='PriorityData')  # Contains LOB1, LOB2, LOB3, element, documentType, priority
+ob_df = pd.read_excel(xls, sheet_name='OB')  # Contains element, value
+sr_df = pd.read_excel(xls, sheet_name='SR')  # Contains element, value
 
 # Function to read JSON files from a directory
 def read_json_files_from_directory(directory_path):
@@ -59,6 +61,9 @@ def get_highest_priority_elements(data_list, lob_df, priority_df):
             # Get priority rank
             priority_rank = priority_filtered.iloc[0]["priority"]
 
+            # Get OB/SR Element value
+            element_in_sor: dict = find_element_value(element_name)
+
             # Update the element if it has a higher priority (lower number)
             if element_name not in element_priority_map or element_priority_map[element_name]["priority_rank"] > priority_rank:
                 element_priority_map[element_name] = {
@@ -68,11 +73,33 @@ def get_highest_priority_elements(data_list, lob_df, priority_df):
                     "element_name": element_name,
                     "element_value": record["element_value"],
                     "normal_value": record["normal_value"],
-                    "priority_rank": priority_rank
+                    "priority_rank": priority_rank,
+                    "element_in_sor": element_in_sor.get('value') if element_in_sor.__len__() > 0 else ''
                 }
 
     return list(element_priority_map.values())
 
+
+# Function to find element and its value from any sheet
+def find_element_value(element_name):
+
+    # 1. Check in OB sheet
+    ob_row = ob_df[ob_df['OB_element'] == element_name].dropna(axis=1, how='all')
+    if not ob_row.empty:
+        value = ob_row.iloc[0].dropna().to_dict()
+        print(f"Element '{element_name}' found in OB: {value}")
+        return value
+
+    # 2 Check in SR sheet
+    sr_row = sr_df[sr_df['SR_element'] == element_name].dropna(axis=1, how='all')
+    if not sr_row.empty:
+        value = sr_row.iloc[0].dropna().to_dict()
+        print(f"Element '{element_name}' found in SR: {value}")
+        return value
+
+    # If not found in any sheet
+    print(f"Element '{element_name}' not found in LOBData, OB, or SR.")
+    return None
 
 # Example usage
 
