@@ -86,13 +86,16 @@ def merge_with_sor_other(intermediate_file, sor_other_file, output_file):
         'Value3_y': 'Value3'
     })
 
-    # Ensure columns exist before assigning
-    if {'Value1', 'Value2', 'Value3'}.issubset(merged_result.columns):
-        updated_values = merged_result[['Value1', 'Value2', 'Value3']]
-    else:
-        print("\nERROR: Expected columns missing after merge!")
-        print("Merged Result Columns:", merged_result.columns)
-        return
+    # Ensure merged_result has the correct shape
+    updated_values = merged_result[['Value1', 'Value2', 'Value3']].reset_index(drop=True)
+
+    # If row counts do not match, fill with empty values
+    if len(updated_values) != missing_values.sum():
+        print("\nWARNING: Row count mismatch during assignment! Filling missing values with empty strings.")
+        expected_rows = missing_values.sum()
+        while len(updated_values) < expected_rows:
+            updated_values = updated_values.append(pd.Series(["", "", ""], index=['Value1', 'Value2', 'Value3']),
+                                                   ignore_index=True)
 
     # Assign only missing values
     merged_df.loc[missing_values, ['Value1', 'Value2', 'Value3']] = updated_values.values
