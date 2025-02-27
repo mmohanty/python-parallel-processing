@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Load the Excel file
-file_path = "your_file.xlsx"  # Replace with your actual file path
+file_path = "data/xls/SampleTest.xlsx"  # Replace with your actual file path
 df = pd.read_excel(file_path)
 
 
@@ -17,7 +17,7 @@ def transform_values(value1, value2):
 
 
 # Apply transformation only if (T_ID is T3 or T7) AND (S_ID is 90)
-mask = (df["T_ID"].isin(["T3", "T7"])) & (df["S_ID"] == 90)
+mask = (df["T_ID"].isin(["T1", "T7"])) & (df["S_ID"] == "S1")
 df.loc[mask, "Value1"] = df.loc[mask].apply(
     lambda row: transform_values(row["Value1"], row["Value2"]), axis=1
 )
