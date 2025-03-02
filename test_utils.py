@@ -1,3 +1,9 @@
+import re
+
+def split_tokens(text):
+    return re.split(r'[;,]', text)
+
+
 def format_number(num_str):
     num = float(num_str)  # Convert string to float
     if num.is_integer():
@@ -14,3 +20,7 @@ if __name__ == '__main__':
     formatted_numbers = [format_number(num) for num in test_numbers]
 
     print(formatted_numbers)  # Output: ['8.9', '8.92', '8.92', '8', '8', '8']
+
+    test_string = "apple,banana;cherry,grape;orange"
+    tokens = split_tokens(test_string)
+    print(tokens)  # Output: ['apple', 'banana', 'cherry', 'grape', 'orange']
