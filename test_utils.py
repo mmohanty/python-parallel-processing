@@ -1,4 +1,7 @@
 import re
+import csv
+from thefuzz import fuzz, process  # thefuzz is the updated version of fuzzywuzzy
+
 
 def split_tokens(text):
     return re.split(r'[;,]', text)
@@ -12,7 +15,25 @@ def format_number(num_str):
         return f"{num:.2f}".rstrip('0').rstrip('.')  # Format to 2 decimal places, remove trailing zeros
 
 
+def parse_names(name_string):
+    """Correctly splits a comma-separated string while handling names with commas."""
+    return list(csv.reader([name_string]))[0]
 
+
+def find_name_match(name, name_string, threshold=85):
+    """Finds an exact or close match for a name in a comma-separated list."""
+    names_list = parse_names(name_string)  # Parse names correctly
+
+    if name in names_list:
+        return f"Exact match found: {name}"
+
+    # Use fuzzy matching to find the best close match
+    best_match, score = process.extractOne(name, names_list)
+
+    if score >= threshold:
+        return f"Close match found: {best_match} (Similarity: {score}%)"
+
+    return "No match found"
 
 if __name__ == '__main__':
     # Test cases
@@ -24,3 +45,10 @@ if __name__ == '__main__':
     test_string = "apple,banana;cherry,grape;orange"
     tokens = split_tokens(test_string)
     print(tokens)  # Output: ['apple', 'banana', 'cherry', 'grape', 'orange']
+
+    # Example usage
+    name_list = 'John, Doe, Alice, Jane, Smith, Bob'
+    name_to_search = "Jane Smith"
+
+    result = find_name_match(name_to_search, name_list)
+    print(result)
