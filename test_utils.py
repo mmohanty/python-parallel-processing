@@ -35,6 +35,16 @@ def find_name_match(name, name_string, threshold=85):
 
     return "No match found"
 
+
+def clean_text(text):
+    # Remove special characters (except alphanumeric and spaces) and replace with space
+    text = re.sub(r'[^\w\s]', ' ', text)
+
+    # Replace multiple spaces with a single space
+    text = re.sub(r'\s+', ' ', text).strip()
+
+    return text
+
 if __name__ == '__main__':
     # Test cases
     test_numbers = ["8.9000", "8.92333", "8.926666", "8.0", "8.00", "8", "8.01", "8.001"]
@@ -52,3 +62,8 @@ if __name__ == '__main__':
 
     result = find_name_match(name_to_search, name_list)
     print(result)
+
+    # Example Usage
+    input_text = "Hello!!!   World, this  is   a   test!!  "
+    cleaned_text = clean_text(input_text)
+    print(cleaned_text)  # Output: "Hello World this is a test"
